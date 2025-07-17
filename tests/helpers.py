@@ -109,6 +109,6 @@ def is_supported_on_hpu(
     """
     Check if the given quant_type, dtype and quant_storage are supported on HPU.
     """
-    if quant_type == "fp4" or dtype == torch.float16 or quant_storage not in (torch.uint8, torch.bfloat16):
+    if quant_type == "fp4" or dtype == torch.float16 or quant_storage != torch.uint8:
         return False
     return True

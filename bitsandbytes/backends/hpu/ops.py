@@ -9,6 +9,23 @@ from ..._ops import register_kernel
 from ..utils import GAUDI_SW_VER
 
 
+@register_kernel("bitsandbytes::quantize_4bit", "hpu")
+def _(
+    A: torch.Tensor, blocksize: int, quant_type: str, quant_storage: torch.dtype
+) -> tuple[torch.Tensor, torch.Tensor]:
+    torch._check_is_size(blocksize)
+    torch._check(quant_type == "nf4", lambda: f"quant_type must be nf4, got {quant_type}")
+    torch._check(quant_storage == torch.uint8, lambda: f"quant_storage must be torch.uint8, got {quant_storage}")
+    torch._check(
+        A.dtype in [torch.bfloat16, torch.float32],
+        lambda: f"Blockwise 4bit quantization on HPU only supports BF16/FP32 dtypes, but got {A.dtype}",
+    )
+    if A.dim() != 1:
+        A = A.view(-1)
+    packed, absmax = torch.ops.hpu.quantize_nf4(A, blocksize)
+    return packed.view(-1, 1), absmax.to(torch.float32)
+
+
 @register_kernel("bitsandbytes::dequantize_4bit", "hpu")
 def _(
     A: torch.Tensor,
